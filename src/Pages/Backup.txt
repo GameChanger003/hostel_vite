@@ -1,0 +1,217 @@
+import { addDoc, collection, doc,getDocs,deleteDoc,getDoc,where, query,onSnapshot ,setDoc} from 'firebase/firestore';
+import React,{useState,useEffect} from 'react'
+import { DataBase } from '../FirebaseInit';
+import {Card,Row,Col,Form,FloatingLabel,Container,Button,Modal,} from 'react-bootstrap'
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { async } from '@firebase/util';
+const Add_rooms = () => {
+    const [Block,setBlock]=useState('');
+    const [Floor,setFloor]=useState('');
+    const [Room,setRoom]=useState('');
+    const [Cap,setCap]=useState();
+    const [Id,setId]=useState();
+    const [Data,setData]=useState([]);
+    const colref=collection(DataBase,'Rooms');
+    const [modalShow, setModalShow] = useState(false);
+    let rmk=false;
+    const [uDat,setUdat]=useState([]);
+    const submit=async(e)=>{
+      e.preventDefault();
+      const docRef = collection(DataBase,"Rooms")
+    const docSnap = await query(docRef,where('Room','==',Room),where('Floor','==',Floor),where('Block','==',Block));
+    onSnapshot(docSnap,(data)=>{
+      data.docs.map((items)=>{
+        rmk=true
+      })
+    })
+
+if (rmk) {
+    setBlock("")
+      setCap(0)
+      setFloor(0)
+      setRoom(0)
+      dng('Room Existed')
+
+} else {
+  await setDoc(doc(DataBase, "Rooms",rd), {Block,Floor,Room,Cap,Vac:Cap})
+  tst('Room Added')
+  setBlock("")
+      setCap(0)
+      setFloor("")
+      setRoom(0)
+     
+}
+  }
+
+    function tst(e) {
+      toast.success(e, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        });
+    }
+    function dng(e) {
+      toast.error(e, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        });
+    }
+
+    useEffect(() => {
+      getDocs(colref)
+      .then(res=>{
+        const movs=res.docs.map(doc=>({
+          data:doc.data(),
+          id:doc.id,
+        }))
+        setData(movs)
+      })
+    }, [])
+
+   async function info(id) {
+    const docRef = doc(DataBase, "Rooms",id);
+    const docSnap = await getDoc(docRef);
+    setUdat(docSnap.data());
+    }
+
+    function Del(id) {
+      const delref=doc(DataBase,'Rooms',id)
+      deleteDoc(delref)
+      .then(e=>dng('Room Deleted'))
+      .catch(err=>console.log(err.message))
+     }
+     
+     function MyVerticallyCenteredModal(props) {
+      return (
+        <Modal
+          {...props}
+          size="lg"
+          aria-labelledby="contained-modal-title-vcenter"
+          centered
+        >
+          <Modal.Header closeButton>
+            <Modal.Title id="contained-modal-title-vcenter">
+           <h3>Room Information</h3>
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <h5> Block: {uDat.Block}  || Floor: {uDat.Floor} || Room: {uDat.Room}</h5>
+            <hr width='50%'/>
+            <h6> Capacity: {uDat.Cap}  || 
+             Vacency: {uDat.Vac}</h6> <br />
+            <h5>Room Mates:</h5>
+            <hr/>
+            <p>
+
+            </p>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button onClick={props.onHide}>Close</Button>
+          </Modal.Footer>
+        </Modal>
+      );
+    }    
+
+  return (
+    <div>
+      <ToastContainer
+      position="top-right"
+      autoClose={5000}
+      hideProgressBar={false}
+      newestOnTop={false}
+      closeOnClick
+      rtl={false}
+      pauseOnFocusLoss
+      draggable
+      pauseOnHover
+      />
+      <Container>
+        {/* <input type="text" name="Block" id="" value={Block} onChange={e=>setBlock(e.target.value)} />
+        <input type="text" name="Floor" id="" value={Floor} onChange={e=>setFloor(e.target.value)} />
+        <input type="text" name="Room" id="" value={Room} onChange={e=>setRoom(e.target.value)} />
+        <input type="number" name="Cap" id="" value={Cap} onChange={e=>setCap(e.target.value)} /> */}
+        
+        <h1>Add Rooms 🚪</h1>
+        <hr width='50%'/>
+        <Row>
+        <Col>
+        <FloatingLabel controlId="floatingSelect" label="Block">
+      <Form.Select aria-label="Floating label select example" onChange={e=>setBlock(e.target.value)}>
+        <option disabled selected>------------------</option>
+        <option value="1">Block-1</option>
+        <option value="2">Block-2</option>
+      </Form.Select>
+    </FloatingLabel>
+      </Col>
+      <Col>
+        <FloatingLabel controlId="floatingPassword" label="Floor">
+        <Form.Control type="text" placeholder="Password" value={Floor} onChange={e=>setFloor(e.target.value)}/>
+      </FloatingLabel>
+      </Col>
+        </Row>
+        <br />
+        <Row>
+        <Col>
+        <FloatingLabel controlId="floatingPassword" label="Room">
+        <Form.Control type="number" placeholder="Password" value={Room} onChange={e=>setRoom(e.target.value)}/>
+      </FloatingLabel>
+      </Col>
+      <Col>
+        <FloatingLabel controlId="floatingPassword" label="Capacity">
+        <Form.Control type="number" placeholder="Password" value={Cap} onChange={e=>setCap(e.target.value)}/>
+      </FloatingLabel>
+      </Col>
+      </Row>
+      <br />
+      {/* <center>  <Button onClick={chkref}>Add room</Button></center> */}
+      <center>  <Button onClick={submit}>Create</Button></center>
+        <br />
+        <h1>All Rooms 🛋️</h1>
+<hr />
+        <Row md={3} xs={1} sm={2}>
+       {Data.map(e=>
+       <Col key={e.id}><Card border="warning" style={{ width: '20rem',marginRight:'1rem' }} md={6} xs={12}>
+       <Card.Header style={{backgroundColor:'#F7ECDE'}}>Block: {e.data.Block}</Card.Header>
+       <Card.Body>
+         <Card.Title>Room No: {e.data.Room}</Card.Title>
+         <Card.Text>
+           Floor : {e.data.Floor} <br /> 
+           Capacity : {e.data.Cap} <br />
+           <br />
+           <Button variant='outline-warning'  onClick={() => {
+            setModalShow(true)
+            info(e.id);
+          }}>Visit Room</Button> &nbsp;&nbsp;&nbsp;
+           {/* <Button variant='outline-info' onClick={(e)=>{
+            setId(e.id)
+            setCap(e.data.Cap)
+            setFloor(e.data.Floor)
+            setRoom(e.data.Room)
+
+           }}>Edit Room</Button>&nbsp;&nbsp;&nbsp; */}
+           <Button variant='outline-danger' onClick={()=>{Del(e.id)}}>Delete Room</Button>
+         </Card.Text>
+       </Card.Body>
+     </Card> <br /></Col>
+        )}
+        </Row>
+        </Container>
+        <MyVerticallyCenteredModal
+        show={modalShow}
+        onHide={() => setModalShow(false)}
+      />
+    </div>
+  )
+}
+
+export default Add_rooms;
